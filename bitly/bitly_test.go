@@ -1,7 +1,6 @@
 package bitly
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -22,7 +21,7 @@ func setup() {
 	mux = http.NewServeMux()
 	server = httptest.NewServer(mux)
 	client = NewClient("abc", "")
-	client.BaseURL = server.URL
+	client.BaseURL = server.URL + "/"
 }
 
 func teardown() {
@@ -41,20 +40,17 @@ func TestMakeRequest(t *testing.T) {
 	setup()
 	defer teardown()
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/foo", func(w http.ResponseWriter, r *http.Request) {
 		if m := "GET"; m != r.Method {
 			t.Errorf("Request method = %v, want %v", r.Method, m)
 		}
-		print(r.URL.String())
+		if p := "bar"; p != r.URL.Query().Get("foo") {
+			t.Errorf("Parameter = %v, want %v", r.URL.Query().Get("foo"), p)
+		}
 	})
 
-	parameters := map[string]string{
-		"foo": "bar",
-	}
-
-	response, err := client.MakeRequest("GET", "/", "asd", parameters)
+	_, err := client.MakeRequest("GET", client.BaseURL+"/foo?foo=bar", "asd")
 	if err != nil {
 		t.Errorf("Error:%v", err)
 	}
-	fmt.Println(string(response))
 }

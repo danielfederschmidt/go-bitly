@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 )
 
 const (
@@ -29,22 +28,20 @@ func NewClient(accessToken string, baseURL string) *Client {
 	return client
 }
 
-func (c *Client) MakeRequest(method, urlStr string, body interface{},
-	parameters map[string]string) (res []byte, err error) {
+// Makes a request to an endpoint and returns the response of the request
+// urlStr is the relative URL of the endpoint
+// Method is a String contained a HTTP Method
+func (c *Client) MakeRequest(method, reqURLString string, body interface{}) (res []byte, err error) {
 
-	endpointUrl, err := url.Parse(urlStr)
+	//Inject AccessToken
+	reqURL := reqURLString + "&access_token=" + c.AccessToken
 
 	if err != nil {
 		return nil, err
 	}
 
-	params := url.Values{}
-	params.Add("access_token", c.AccessToken)
-	for k, v := range parameters {
-		params.Add(k, v)
-	}
-
 	var buf io.ReadWriter
+
 	if body != nil {
 		buf = new(bytes.Buffer)
 		err := json.NewEncoder(buf).Encode(body)
@@ -53,16 +50,21 @@ func (c *Client) MakeRequest(method, urlStr string, body interface{},
 		}
 	}
 
-	reqUrl := endpointUrl.String() + "?" + params.Encode()
+	req, err := http.NewRequest(method, reqURL, buf)
 
-	req, err := http.NewRequest(method, reqUrl, buf)
+	if err != nil {
+		return nil, err
+	}
 
 	httpResponse, err := c.Client.Do(req)
 
-	//Todo: Decode Response according to requested Return Type
-	jsonResponseData, err := ioutil.ReadAll(httpResponse.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	responseData, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
 		panic(err)
 	}
-	return jsonResponseData, nil
+	return responseData, nil
 }
