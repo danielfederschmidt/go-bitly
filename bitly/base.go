@@ -61,7 +61,7 @@ func (c *Client) Expand(shortURLs []string, hashes []string, returnFormat string
 	return string(res), nil
 }
 
-func (c *Client) LinkInfo(shortURLs []string, hashes []string, extraUserInfo bool) (response string, err error) {
+func (c *Client) Info(shortURLs []string, hashes []string, extraUserInfo bool) (response string, err error) {
 	endpointURL, err := url.Parse(c.BaseURL + "v3/info")
 
 	if err != nil {
